@@ -1,0 +1,47 @@
+% This program involves validation of the glucose process model
+clear all;
+clc;
+
+% Define optimal values for process gain, time constant, and time delay
+optimal_x(1) = 9.7246;      % Process gain
+optimal_x(2) = 99.3881;     % Time constant
+optimal_x(3) = 16.8901;     % Time delay 
+
+
+% Display
+xo(1) = optimal_x(1);
+disp(['Process gain: ', num2str(xo(1))]);
+xo(2) = optimal_x(2);
+disp(['Time constant: ', num2str(xo(2))]);
+xo(3) = optimal_x(3);
+disp(['Time delay: ', num2str(xo(3))]);
+
+% Load the generated step change simulation results
+load('result_stepchange.mat'); 
+
+% Validation of the process model ( with the trained dataset 1 )
+G_in1 = U(4001:4800);                       % Manipulated input for dataset 1
+G_Data1 = G_step_profile(6401:7200);        % Simulated glucose data
+t_data1 = Time_profile(6401:7200);          % Time data for dataset 1
+G_ss1 = G_Data1(1);                         
+
+% Step response in FOPTD model
+G_model_response1 = zeros(length(t_data1), 1);
+for i = 1:length(t_data1)
+    if (t_data1(i) - 6400) >= xo(3)  % Check if the time has passed the delay
+        G_model_response1(i) = G_ss1 + xo(1) * (G_in1(i) - 0) * (1 - exp(-(t_data1(i) - 6400 - xo(3)) / xo(2)));
+    else
+        G_model_response1(i) = G_ss1;  % Before the delay, response is at steady state
+    end
+end
+
+% Plotting results for dataset 1
+figure(1);
+plot(t_data1, G_Data1, 'b', 'DisplayName', 'Plant Data');
+hold on;
+plot(t_data1, G_model_response1, 'r--', 'DisplayName', 'Model Response');
+legend('Location', 'best');
+title('Validation with Dataset 1 (FOPTD Model)');
+xlabel('Time');
+ylabel('Glucose Concentration (mg/dL)');
+grid on;
